@@ -55,9 +55,9 @@ class Downloader:
                                 done = int(50*downloaded/total)
                                 sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50-done)))
                                 sys.stdout.flush()
+                    sys.stdout.write("\n")
                     self.__rename_file(os.path.join(item["file_path"], item["file_tmp"]), os.path.join(item["file_path"], item["file"]))
                     self.__history.add(item["book_name"], item["vol_name"])
-                    sys.stdout.write("\n")
                     print("Successfully downloaded:", item["file"])
 
                     self.account["left"] -= item["download_size"]

@@ -2,7 +2,6 @@ import requests
 import os
 import pathlib
 import sys
-import re
 from lib.config import Config
 from lib.my import My
 from lib.myfollow import MyFollow
@@ -27,7 +26,7 @@ class Downloader:
         self.__make_dir(self.config["download_path"])
         # start download
         # book_list = [
-        #     {'name': '五等分的花嫁', 'id': 52864, 'authors': ['春場ねぎ', '春場蔥'], 'last_update': '2020-11-14', 'is_finished': True}
+        #     {'name': '進擊的巨人', 'id': 10184, 'authors': ['諫山創'], 'last_update': '2021-01-24', 'is_finished': False}
         # ]
         # for book in book_list:
         for book in self.book_list:
@@ -40,7 +39,15 @@ class Downloader:
             for item in self.download_queue:
                 if self.__calc_limit(item) is False:
                     with open(os.path.join(item["file_path"], item["file_tmp"]), "wb") as f:
-                        response = requests.get(item["download_link"], stream=True, allow_redirects=True, cookies=self.config["account"], headers = {"user-agent": self.config["ua"]})
+                        response = requests.get(item["download_link"], stream=True, allow_redirects=True, cookies=self.config["account"], 
+                        headers = {
+                            "user-agent": self.config["ua"],
+                            "refer": "https://vol.moe/c/{}.htm".format(book["id"])
+                        })
+                        if response.status_code != 200:
+                            print(response.text)
+                            print("Please first try downloading a book in the browser, then update the cookies in config.yml")
+                            return
                         total = response.headers.get("content-length")
                         self.downloading = item
                         print("Start Downloading:", item["file"])
@@ -53,7 +60,7 @@ class Downloader:
                                 downloaded += len(data)
                                 f.write(data)
                                 done = int(50*downloaded/total)
-                                sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50-done)))
+                                sys.stdout.write("\r[{}{}] {}/{}".format("█" * done, "." * (50-done), downloaded, total))
                                 sys.stdout.flush()
                     sys.stdout.write("\n")
                     self.__rename_file(os.path.join(item["file_path"], item["file_tmp"]), os.path.join(item["file_path"], item["file"]))

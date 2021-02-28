@@ -121,9 +121,9 @@ class Downloader:
         try:
             os.rename(from_filename, to_filename)
         except OSError:
-            print ("Renaming the downloaded file failed. Please try manually renaming the file from {from} to {to}".format(from=from_filename, to=to_filename))
+            print("Renaming the downloaded file failed. Please try manually renaming the file from {from_filename} to {to_filename}".format(from_filename=from_filename, to_filename=to_filename))
         else:
-            print ("Successfully renamed the downloaded file")
+            print("Successfully renamed the downloaded file")
     
     def __calc_limit(self, item):
         is_excessed = True
@@ -139,4 +139,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         d.stop()
         print("\nInterrupted, quit.")
-    

@@ -83,18 +83,17 @@ class Downloader:
                 print ("\nDeletion of the file \"{}\" failed, it does not exist".format(self.downloading["file_tmp"]))
             else:
                 print ("\nSuccessfully deleted the file \"{}\"".format(self.downloading["file_tmp"]))
-        
 
     def __make_dir(self, pathname):
         path = os.path.join(pathlib.Path(__file__).parent.absolute(), pathname)
         try:
-            os.makedirs(path)
+            if os.path.exists(path) is False:
+                os.makedirs(path)
+                print("Successfully created the directory \"{}\"".format(path))
         except OSError:
-            print ("Creation of the directory \"{}\" failed, it already exists".format(path))
-            return False
-        else:
-            print ("Successfully created the directory \"{}\"".format(path))
-            return True
+            print("Creation of the directory \"{}\" failed due to unknown error.".format(path))
+            print("The program will be terminated.")
+            sys.exit()
 
     def __gen_queue(self, book_details):
         for vol in book_details["vols"]:
@@ -122,7 +121,7 @@ class Downloader:
         try:
             os.rename(from_filename, to_filename)
         except OSError:
-            print ("Renaming the downloaded file failed")
+            print ("Renaming the downloaded file failed. Please try manually renaming the file from {from} to {to}".format(from=from_filename, to=to_filename))
         else:
             print ("Successfully renamed the downloaded file")
     

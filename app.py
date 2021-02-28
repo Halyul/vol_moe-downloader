@@ -73,7 +73,7 @@ class Downloader:
                 else:
                     print("Bandwidth limit excessed")
                     return
-        
+            self.download_queue = []
             self.__history.finished(book)
     
     def stop(self):

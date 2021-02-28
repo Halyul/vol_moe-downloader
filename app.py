@@ -15,7 +15,7 @@ class Downloader:
         self.__my_follow = MyFollow()
         self.__history = History()
         self.config = Config().fetch()
-        self.account = None
+        self.account = self.__my.fetch()
         self.book_list = self.__my_follow.fetch()
         self.history = self.__history.fetch()
         self.download_queue = []
@@ -30,51 +30,50 @@ class Downloader:
         # ]
         # for book in book_list:
         for book in self.book_list:
-            self.account = self.__my.fetch()
             # add book name folder
-            self.__make_dir(self.config["download_path"] + "/" + book["name"])
             book_details = Book(book["id"]).fetch()
-            self.__gen_queue(book_details)
+            if self.__gen_queue(book_details) is True:
+                self.__make_dir(self.config["download_path"] + "/" + book["name"])
+                for item in self.download_queue:
+                    if self.__calc_limit(item) is False:
+                        with open(os.path.join(item["file_path"], item["file_tmp"]), "wb") as f:
+                            response = requests.get(item["download_link"], stream=True, allow_redirects=True, cookies=self.config["account"], 
+                            headers = {
+                                "user-agent": self.config["ua"],
+                                "refer": "https://vol.moe/c/{}.htm".format(book["id"])
+                            })
+                            if response.status_code != 200:
+                                print(response.text)
+                                print("Please first try downloading a book in the browser, then update the cookies in config.yml")
+                                return
+                            total = response.headers.get("content-length")
+                            self.downloading = item
+                            print("Start Downloading:", item["file"])
+                            if total is None:
+                                f.write(response.content)
+                            else:
+                                downloaded = 0
+                                total = int(total)
+                                for data in response.iter_content(chunk_size=max(int(total/1000), 1024*1024)):
+                                    downloaded += len(data)
+                                    f.write(data)
+                                    done = int(50*downloaded/total)
+                                    sys.stdout.write("\r[{}{}] {}/{}".format("█" * done, "." * (50-done), downloaded, total))
+                                    sys.stdout.flush()
+                        sys.stdout.write("\n")
+                        self.__rename_file(os.path.join(item["file_path"], item["file_tmp"]), os.path.join(item["file_path"], item["file"]))
+                        self.__history.add(item["book_name"], item["vol_name"])
+                        print("Successfully downloaded:", item["file"])
 
-            for item in self.download_queue:
-                if self.__calc_limit(item) is False:
-                    with open(os.path.join(item["file_path"], item["file_tmp"]), "wb") as f:
-                        response = requests.get(item["download_link"], stream=True, allow_redirects=True, cookies=self.config["account"], 
-                        headers = {
-                            "user-agent": self.config["ua"],
-                            "refer": "https://vol.moe/c/{}.htm".format(book["id"])
-                        })
-                        if response.status_code != 200:
-                            print(response.text)
-                            print("Please first try downloading a book in the browser, then update the cookies in config.yml")
-                            return
-                        total = response.headers.get("content-length")
-                        self.downloading = item
-                        print("Start Downloading:", item["file"])
-                        if total is None:
-                            f.write(response.content)
-                        else:
-                            downloaded = 0
-                            total = int(total)
-                            for data in response.iter_content(chunk_size=max(int(total/1000), 1024*1024)):
-                                downloaded += len(data)
-                                f.write(data)
-                                done = int(50*downloaded/total)
-                                sys.stdout.write("\r[{}{}] {}/{}".format("█" * done, "." * (50-done), downloaded, total))
-                                sys.stdout.flush()
-                    sys.stdout.write("\n")
-                    self.__rename_file(os.path.join(item["file_path"], item["file_tmp"]), os.path.join(item["file_path"], item["file"]))
-                    self.__history.add(item["book_name"], item["vol_name"])
-                    print("Successfully downloaded:", item["file"])
-
-                    self.account["left"] -= item["download_size"]
-                    self.account["used"] += item["download_size"]
-                    self.account["daily_used"] += item["download_size"]
-                else:
-                    print("Bandwidth limit excessed")
-                    return
-            self.download_queue = []
-            self.__history.finished(book)
+                        self.account["left"] -= item["download_size"]
+                        self.account["used"] += item["download_size"]
+                        self.account["daily_used"] += item["download_size"]
+                    else:
+                        print("Bandwidth limit excessed")
+                        return
+                
+                self.download_queue = []
+                self.__history.finished(book)
     
     def stop(self):
         if self.downloading is not None:
@@ -115,7 +114,9 @@ class Downloader:
                     book_name=book_details["book_name"],
                     vol_name=vol["vol"]
                 ))
-        return
+            else:
+                return False
+        return True
 
     def __rename_file(self, from_filename, to_filename):
         try:

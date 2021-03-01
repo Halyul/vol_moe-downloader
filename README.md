@@ -38,6 +38,10 @@ daily_limit: 99999
 
 This file stores all the books have been downloaded, or you can add your own. The file logged here will be skipped.
 
+Please make sure the name of the book is the latest, otherwise the program will re-download the book again.
+
+I may or may not update the way `history.yml` is used.
+
 ``` yaml
 進擊的巨人: # the name of the book
 - 第 00 卷 # the name of each volume
